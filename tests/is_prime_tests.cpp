@@ -17,17 +17,23 @@ TEST(async_tests, is_prime_test) {
 }
 
 TEST(async_tests, small_scale_test) {
+    std::unique_ptr<Async_policy> async = std::make_unique<Async_policy>();
+    std::unique_ptr<Sync_policy> sync = std::make_unique<Sync_policy>();
+    Primes_counter counter;
     int async_primes_count = 0;
     int sync_primes_count = 0;
     std::vector<int> nums(100);
     std::iota(nums.begin(), nums.end(), 1);
-    async_primes_count = count_primes(nums, "ASYNC_POLICY", THREAD_COUNT);
-    sync_primes_count = count_primes(nums);
+    async_primes_count = counter.count(nums, async.get(), THREAD_COUNT);
+    sync_primes_count = counter.count(nums, sync.get(), THREAD_COUNT);
     EXPECT_EQ(async_primes_count, sync_primes_count);
     EXPECT_EQ(async_primes_count, 26);
 }
 
 TEST(async_tests, large_scale_test) {
+    std::unique_ptr<Async_policy> async = std::make_unique<Async_policy>();
+    std::unique_ptr<Sync_policy> sync = std::make_unique<Sync_policy>();
+    Primes_counter counter;
     int primes_count = 0;
     int expected = 0;
     std::vector<int> nums(LIMIT);
@@ -37,6 +43,6 @@ TEST(async_tests, large_scale_test) {
             ++expected;
         }
     }); 
-    primes_count = count_primes(nums, "ASYNC_POLICY", THREAD_COUNT);
+    primes_count = counter.count(nums, async.get(), THREAD_COUNT);
     EXPECT_EQ(primes_count, expected);
 }

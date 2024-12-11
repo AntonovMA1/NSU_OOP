@@ -1,10 +1,9 @@
 #ifndef ASYNC_HPP
 #define ASYNC_HPP
-#include <iostream>
-#include <stdlib.h>
 #include <vector>
 #include <algorithm>
 #include <future>
+#include <memory>
 
 bool is_prime(int n) {
     if (n % 2 == 0) {
@@ -17,18 +16,14 @@ bool is_prime(int n) {
     return i * i > n;
 }
 
-int count_primes(std::vector<int> nums, std::string policy = "SYNC_POLICY", int THREAD_COUNT = 4) {
-    int count = 0;
-    if (policy == "SYNC_POLICY") {
-        std::for_each(nums.begin(), nums.end(), [&](int num){
-            if(is_prime(num)) {
-                ++count;
-            }
-        });
-        return count;
-    }
-    else if (policy == "ASYNC_POLICY") {
-        std::atomic<int> atomic_count(count);
+class Policy {
+public:
+    virtual int use(std::vector<int>& nums, int THREAD_COUNT = 4) = 0;
+};
+
+class Async_policy: public Policy {
+    int use(std::vector<int>& nums, int THREAD_COUNT) {
+        std::atomic<int> atomic_count(0);
         std::vector<std::future<void>> futures;
         int integer_part = nums.size() / THREAD_COUNT;
         for (int i = 0; i < THREAD_COUNT - 1; i++) {
@@ -57,9 +52,26 @@ int count_primes(std::vector<int> nums, std::string policy = "SYNC_POLICY", int 
 
         return atomic_count;
     }
-    else {
-        throw std::invalid_argument("Object not found in pool");
+};
+
+class Sync_policy: public Policy {
+    int use(std::vector<int>& nums, int THREAD_COUNT) {
+        int count = 0;
+        std::for_each(nums.begin(), nums.end(), [&](int num){
+            if(is_prime(num)) {
+                ++count;
+            }
+        });
+        return count;
     }
-}
+};
+
+class Primes_counter final {
+public:
+    int count(std::vector<int>& nums, Policy* policy, int THREAD_COUNT = 4) const { //добавить класс policy
+        return policy->use(nums, THREAD_COUNT);
+    }
+};
+
 
 #endif //ASYNC_HPP
